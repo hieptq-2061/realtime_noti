@@ -1,0 +1,71 @@
+version: '2'
+
+services:
+    application:
+        container_name: realtime_noti
+        image: debian
+        volumes:
+            - ./:/var/www/laravel
+    workspace:
+        container_name: realtime_noti_workspace
+        image: framgia/laravel-workspace
+        volumes_from:
+            - application
+        tty: true
+    php-fpm:
+        container_name: realtime_noti_php-fpm
+        image: framgia/laravel-php-fpm
+        volumes_from:
+            - application
+        expose:
+            - "9000"
+        links:
+            - workspace
+    nginx:
+        container_name: realtime_noti_nginx
+        image: framgia/laravel-nginx
+        volumes_from:
+            - data
+            - logs
+            - application
+        ports:
+            - "2222:80"
+        links:
+            - php-fpm
+    data:
+        container_name: realtime_noti_data
+        image: debian
+        volumes:
+            - .docker/mysql:/var/lib/mysql
+            - .docker/data:/data
+    logs:
+        container_name: realtime_noti_logs
+        image: debian
+        volumes:
+            - .docker/logs/nginx:/var/log/nginx
+            - .docker/logs/mongodb:/var/log/mongodb
+    mysql:
+        container_name: realtime_noti_mysql
+        image: mysql:5.7
+        volumes_from:
+            - data
+            - logs
+        expose:
+            - "3306"
+        environment:
+            MYSQL_DATABASE: realtime_noti
+            MYSQL_USER: root
+            MYSQL_PASSWORD: secret
+            MYSQL_ROOT_PASSWORD: root
+    phpmyadmin:
+        container_name: realtime_noti_phpmyadmin
+        image: phpmyadmin/phpmyadmin
+        environment:
+            PMA_ARBITRARY: 1
+            MYSQL_USER: root
+            MYSQL_PASSWORD: secret
+            MYSQL_ROOT_PASSWORD: root
+        ports:
+            - "8888:80"
+        links:
+            - "mysql:mysql"
